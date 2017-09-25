@@ -124,6 +124,7 @@ COMMON_SOURCES = 			\
 	fr-file-selector-dialog.c	\
 	fr-file-selector-dialog.h	\
 	fr-init.c			\
+	fr-guess-charset.c \
 	fr-init.h			\
 	fr-list-model.c			\
 	fr-list-model.h			\
