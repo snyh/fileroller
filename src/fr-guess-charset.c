@@ -3,6 +3,21 @@
 #include "fr-command-zip.h"
 #include "fr-command-unarchiver.h"
 
+/*
+********* encoding判断逻辑 *************
+
+case lsarConfidence值 of
+  0 -> return utf-8
+  (0, 0.5) -> return 0 (直接使用unzip自身的检测逻辑)
+  [0.5, 1] -> return lsarEncoding
+*/
+
+/*
+*********** 已知逻辑 *****************
+2. lsar的encoding分析存在不准确的情况 (360生成测试文件, gb18030编码, 短文件名)
+1. unzip对中文编码检测支持较好, 但若编码为UTF8(lsar 100%确定)则unzip会失败 (MacOS下生成测试文件)
+ */
+
 typedef void (*DetectFunc)(JsonObject* root, void*);
 
 static
@@ -37,8 +52,16 @@ void detect_by_lsar(const char* file, DetectFunc fn , void* data)
 static
 void detect_encoding(JsonObject* root, void* data)
 {
-   char** v = data;
-   *v = g_strdup(json_object_get_string_member (root, "lsarEncoding"));
+  double c = json_object_get_double_member (root, "lsarConfidence");
+  char** v = data;
+
+  if (c == 0) {
+    *v = g_strdup("utf-8");
+  } else if (c < 0.5) {
+    // Do nothing
+  } else if (c >= 0.5) {
+    *v = g_strdup(json_object_get_string_member (root, "lsarEncoding"));
+  }
 }
 
 char* guess_encoding_by_lsar(const char* file)
