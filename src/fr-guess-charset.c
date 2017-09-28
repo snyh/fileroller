@@ -14,7 +14,9 @@ void detect_by_lsar(const char* file, DetectFunc fn , void* data)
 
     gchar* buf = 0;
     GError *err = 0;
-    char* cmd  = g_strdup_printf("lsar -j %s", file);
+    char* quoted_file = g_shell_quote(file);
+    char* cmd  = g_strdup_printf("lsar -j %s", quoted_file);
+    g_free(quoted_file);
     g_spawn_command_line_sync (cmd,	&buf, 0, 0, &err);
     g_free(cmd);
 
