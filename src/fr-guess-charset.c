@@ -1,5 +1,6 @@
 #include <json-glib/json-glib.h>
 #include "file-utils.h"
+#include "glib-utils.h"
 #include "fr-command-zip.h"
 #include "fr-command-unarchiver.h"
 
@@ -72,7 +73,7 @@ char* guess_encoding_by_lsar(const char* file)
 }
 
 static
-void support_unzip(JsonObject* root, void* ret)
+void should_use_unzip(JsonObject* root, void* ret)
 {
   gboolean *v = ret;
   const char* fmt = json_object_get_string_member (root, "lsarFormatName");
@@ -117,11 +118,16 @@ GType guess_archive_type_by_lsar(GType t, GFile *file)
 
   char* filename = g_file_get_path(file);
 
-  gboolean v = FALSE;
-  detect_by_lsar(filename, support_unzip, &v);
-  if (v)  {
-    ret =  FR_TYPE_COMMAND_ZIP;
-  } else {
+  const char* ext = _g_filename_get_extension (filename);
+
+  if (g_strcasecmp(ext, ".zip") == 0 || g_strcasecmp(ext, ".zipx") == 0) {
+    gboolean v = FALSE;
+    detect_by_lsar(filename, should_use_unzip, &v);
+    if (v)  {
+      ret =  FR_TYPE_COMMAND_ZIP;
+    }
+  } else if (g_strcasecmp(ext, ".tar") == 0) {
+    gboolean v = FALSE;
     detect_by_lsar(filename, should_use_unar_for_tar, &v);
     if (v)  {
       ret =  FR_TYPE_COMMAND_UNARCHIVER;
