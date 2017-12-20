@@ -48,9 +48,43 @@ have_rar (void)
 
 /* -- list -- */
 
+static time_t
+mktime_from_string (char *date_s,
+		    char *time_s)
+{
+	struct tm   tm = {0, };
+	char      **fields;
+
+	tm.tm_isdst = -1;
+
+	/* date */
+
+	fields = g_strsplit (date_s, "-", 3);
+	if (fields[0] != NULL) {
+		tm.tm_year = atoi (fields[0]) - 1900;
+		tm.tm_mon = atoi (fields[1]) - 1;
+		tm.tm_mday = atoi (fields[2]);
+	}
+	g_strfreev (fields);
+
+	/* time */
+
+	fields = g_strsplit (time_s, ":", 3);
+	if (fields[0] != NULL) {
+		tm.tm_hour = atoi (fields[0]);
+		if (fields[1] != NULL) {
+			tm.tm_min = atoi (fields[1]);
+			if (fields[2] != NULL)
+				tm.tm_sec = atoi (fields[2]);
+		}
+	}
+	g_strfreev (fields);
+
+	return mktime (&tm);
+}
 
 static time_t
-mktime_from_string (const char *date_s,
+mktime_from_string_old (const char *date_s,
 		    const char *time_s)
 {
 	struct tm   tm = {0, };
@@ -259,7 +293,11 @@ process_line (char     *line,
 			}
 			else {
 				fdata->size = g_ascii_strtoull (size_field, NULL, 10);
-				fdata->modified = mktime_from_string (date_field, time_field);
+				if (rar_comm->rar5) {
+					fdata->modified = mktime_from_string (date_field, time_field);
+				} else {
+					fdata->modified = mktime_from_string_old (date_field, time_field);
+				}
 
 				if (attr_field_is_dir (attr_field, rar_comm)) {
 					char *tmp;
